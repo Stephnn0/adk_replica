@@ -1,13 +1,19 @@
+"""A minimal, from-scratch replica of the core Google ADK (Agent Development Kit) objects.
+
+Implemented so far: FunctionTool, Session, InMemorySessionService.
+Still stubbed: Event.is_final_response, Agent, Runner.
+"""
+
 from __future__ import annotations
+
+import inspect
 import uuid
 from dataclasses import dataclass, field
 from typing import Any, Callable, Iterator
-import inspect  
-
 
 
 # =========================================================
-#  Core objects (stubs — we'll fill these one by one)
+#  Core objects
 # =========================================================
 
 
@@ -20,7 +26,7 @@ class FunctionTool:
 
     def _build_schema(self) -> dict:
 
-        sig = inspect.signature(self.func)
+        sig = inspect.signature(self.func, eval_str=True)
         params = {}
         required = []
 
@@ -36,11 +42,8 @@ class FunctionTool:
             "required": required,
         }
 
-    
     def call(self, **kwargs) -> Any:
         return self.func(**kwargs)
-
-
 
 
 @dataclass
@@ -49,7 +52,7 @@ class Event:
     content: str
 
     def is_final_response(self) -> bool:
-        pass  # TODO later
+        return False  # TODO: implement once the Runner emits model responses
 
 
 @dataclass
@@ -76,10 +79,6 @@ class InMemorySessionService:
         return self._sessions[session_id]
 
 
-class FunctionTool:
-    def __init__(self, func: Callable):
-        pass  # TODO later
-
 class Agent:
     def __init__(self, name: str, model: str, instruction: str, tools: list[Callable] | None = None):
         pass  # TODO later
@@ -98,10 +97,12 @@ def get_weather(city: str) -> dict:
     return {"city": city, "forecast": "sunny", "temp_c": 24}
 
 
-## -------------------- main function  -----------------------
+# =========================================================
+#  Demo
+# =========================================================
 
 
-def main():
+def main() -> None:
     print("...testing program...")
     APP_NAME = "test"
     USER_ID = "steph"
@@ -113,7 +114,6 @@ def main():
         tools=[get_weather],
     )
 
-
     session_service = InMemorySessionService()
     session = session_service.create_session(app_name=APP_NAME, user_id=USER_ID)
     print("Session created:", session)   # step 1 check
@@ -123,7 +123,6 @@ def main():
     tool = FunctionTool(get_weather)
     print("Tool schema:", tool.schema)
     print("Tool call:", tool.call(city="Quito"))
-    
 
     runner = Runner(agent=agent, app_name=APP_NAME, session_service=session_service)
 
@@ -132,7 +131,6 @@ def main():
         print(f"[{event.author}] {event.content}")
         if event.is_final_response():
             print("Final answer:", event.content)
-
 
 
 if __name__ == "__main__":
